@@ -1,0 +1,293 @@
+{
+    "CSE19": {
+        "MONDAY" : {
+            	"P_1": "PHIR13",
+            	"P_2": "PHIR13",
+            	"P_3": "PHIR13",
+            	"P_4": "CHIR13",
+            	"P_5": "HSIR12",
+            	"P_6": "CSPC11"
+        		},
+        "TUESDAY" : {
+            	"P_1": "CHIR13",
+            	"P_2": "CHIR13",
+            	"P_3": "CHIR13",
+            	"P_4": "MAIR12",
+            	"P_5": "PHIR13",
+            	"P_6": "CSPC11"
+        		},
+        "WEDNESDAY" : {
+            	"P_1": "PRIR11",
+            	"P_2": "PRIR11",
+            	"P_3": "PRIR11",
+            	"P_4": "MAIR12",
+            	"P_5": "ENIR11",
+            	"P_6": "ENIR11"
+        		},
+        "THURSDAY" : {
+            	"P_1": "HSIR12",
+            	"P_2": "MAIR12",
+            	"P_3": "PHIR13",
+            	"P_4": "CSPC11",
+            	"P_5": "CHIR13"
+        		},
+        "FRIDAY" : {
+            	"P_1": "MAIR12",
+            	"P_2": "PHIR13",
+            	"P_3": "CSPC11",
+            	"P_4": "CHIR13",
+            	"P_5": "HSIR12"
+        }
+    },
+    "ECE19": {
+        "MONDAY" : {
+            "P_1": "PHIR13",
+            "P_2": "PHIR13",
+            "P_3": "PHIR13",
+            "P_4": "CHIR13",
+            "P_5": "HSIR12",
+            "P_6": "ECPC21"
+        },
+        "TUESDAY" : {
+            "P_1": "CHIR13",
+            "P_2": "CHIR13",
+            "P_3": "CHIR13",
+            "P_4": "MAIR12",
+            "P_5": "PHIR13",
+            "P_6": "ECPC21"
+        },
+        "WEDNESDAY" : {
+            "P_1": "PRIR11",
+            "P_2": "PRIR11",
+            "P_3": "PRIR11",
+            "P_4": "MAIR12",
+            "P_5": "ENIR11",
+            "P_6": "ENIR11"
+        },
+        "THURSDAY" : {
+            "P_1": "HSIR12",
+            "P_2": "MAIR12",
+            "P_3": "PHIR13",
+            "P_4": "ECPC21",
+            "P_5": "CHIR13"
+        },
+        "FRIDAY"	:	{
+            "P_1": "MAIR12",
+            "P_2": "PHIR13",
+            "P_3": "ECPC21",
+            "P_4": "CHIR13",
+            "P_5": "HSIR12"
+        }
+    },
+    "CSE18" : {
+        "MONDAY" : {
+            "P_1": "CSPC26",
+            "P_2": "CSPC29",
+            "P_3": "CSPC27",
+            "P_4": "HSIR14",
+            "P_5": "CSPC28"
+        },
+        "TUESDAY" : {
+            "P_1": "CSLR23",
+            "P_2": "CSLR23",
+            "P_3": "CSLR23",
+            "P_4": "CSPC26",
+            "P_5": "HSIR14",
+            "P_6": "T&P"
+        },
+        "WEDNESDAY" : {
+            "P_1": "CSPC27",
+            "P_2": "MAIR14",
+            "P_3": "HSIR14",
+            "P_4": "CSPC26",
+            "P_5": "CSPC29",
+            "P_6": "CSPC28"
+        },
+        "THURSDAY" : {
+            "P_1": "CSLR24",
+            "P_2": "CSLR24",
+            "P_3": "CSLR24",
+            "P_4": "CSPC29",
+            "P_5": "CSPC28",
+            "P_6": "CSPC27"
+        },
+        "FRIDAY" : {
+            "P_1": "CSPC28",
+            "P_2": "MAIR14",
+            "P_3": "MAIR14"
+        }
+    },
+    "ECE18": {
+        "MONDAY" : {
+            "P_1": "ECPC42",
+            "P_2": "MAIR45",
+            "P_3": "HSIR14",
+            "P_4": "ECPC43",
+            "P_5": "ECPC41",
+            "P_6": "T&P"
+        },
+        "TUESDAY" : {
+            "P_1": "ECLR42",
+            "P_2": "ECLR42",
+            "P_3": "ECLR42",
+            "P_4": "ECPC41",
+            "P_5": "MAIR45"
+        },
+        "WEDNESDAY" : {
+            "P_1": "ECLR41",
+            "P_2": "ECLR41",
+            "P_3": "ECLR41",
+            "P_4": "ECPC42",
+            "P_5": "ECPC44",
+            "P_6": "ECPC43"
+        },
+        "THURSDAY" : {
+            "P_1": "MAIR45",
+            "P_2": "ECPC41",
+            "P_3": "HSIR14",
+            "P_4": "ECPC44",
+            "P_5": "ECPC42"
+        },
+        "FRIDAY" : {
+            "P_1": "ECPC44",
+            "P_2": "ECPC43",
+            "P_3": "ECPC41",
+            "P_4": "HSIR14"
+        }
+    },
+    "CSE17": {
+        "MONDAY"  : {
+            "P_1": "CSPC35",
+            "P_2": "CSPE22",
+            "P_3": "CSPC36",
+            "P_4": "CSPE14",
+            "P_5": "CSPC37"
+        },
+        "TUESDAY" : {
+            "P_1": "CSPE22",
+            "P_2": "CSPE14",
+            "P_3": "CSOE21",
+            "P_4": "CSPC35",
+            "P_5": "CSPC36"
+        },
+        "WEDNESDAY" : {
+            "P_1": "CSLR33",
+            "P_2": "CSLR33",
+            "P_3": "CSLR33",
+            "P_4": "CSPE22",
+            "P_5": "CSOE21",
+            "P_6": "T&P"
+        },
+        "THURSDAY" : {
+            "P_1": "CSLR34",
+            "P_2": "CSLR34",
+            "P_3": "CSLR34",
+            "P_4": "CSOE21",
+            "P_5": "CSPC37",
+            "P_6": "CSPC35"
+        },
+        "FRIDAY" : {
+            "P_1": "CSPC37",
+            "P_2": "CSPE14",
+            "P_3": "CSPC36",
+            "P_4": "CSIR19"
+        }
+    },
+    "ECE17": {
+        "MONDAY" : {
+            "P_1": "ECPC64",
+            "P_2": "E3",
+            "P_3": "ECPC62",
+            "P_4": "ECPC21",
+            "P_5": "ECOE14",
+            "P_6": "ECPC63"
+        },
+        "TUESDAY"	: {
+            "P_1": "ECLR61",
+            "P_2": "ECLR61",
+            "P_3": "ECLR61",
+            "P_4": "ECPC63",
+            "P_5": "ECOE14"
+        },
+        "WEDNESDAY"	: {
+            "P_1": "E3",
+            "P_2": "ECPC21",
+            "P_3": "ECOE14",
+            "P_4": "ECPC64",
+            "P_5": "ECPC62"
+        },
+        "THURSDAY" :{
+            "P_1": "ECLR62",
+            "P_2": "ECLR62",
+            "P_3": "ECLR62",
+            "P_4": "ECIR19",
+            "P_5": "ECPC63",
+            "P_6": "T&P"
+        },
+        "FRIDAY" : {
+            "P_1": "ECPC64",
+            "P_2": "ECPC62",
+            "P_3": "ECPC21"
+        }
+    },
+    "CSE16": {
+        "MONDAY" : {
+            "P_4": "CSIR17",
+            "P_5": "CSIR17",
+            "P_6": "CSIR17"
+        },
+        "TUESDAY" : {
+            "P_1": "CSOE20",
+            "P_2": "CSOE17",
+            "P_3": "ECOE20"
+        },
+        "WEDNESDAY" : {
+            "P_1": "ECOE20",
+            "P_2": "CSOE17",
+            "P_3": "CSPE23"
+        },
+        "THURSDAY":{
+            "P_1": "CSOE20",
+            "P_2": "CSPE23",
+            "P_3": "CSOE20"
+        },
+        "FRIDAY" : {
+            "P_1": "CSPE23",
+            "P_2": "ECOE20",
+            "P_3": "CSOE20",
+            "P_4": "CSIR17",
+            "P_5": "CSIR17",
+            "P_6": "CSIR17"
+        }
+    },
+    "ECE16": {
+        "MONDAY" : {
+        },
+        "TUESDAY" : {
+            "P_1": "E8",
+            "P_2": "E7",
+            "P_3": "E9"
+        },
+        "WEDNESDAY" : {
+            "P_1": "E9",
+            "P_2": "E7",
+            "P_3": "ECPC81",
+            "P_4": "ECIR17",
+            "P_5": "ECIR17",
+            "P_6": "ECIR17"
+        },
+        "THURSDAY" : {
+            "P_1": "E7",
+            "P_2": "ECPC81",
+            "P_3": "E8",
+            "P_4": "ECIR17",
+            "P_5": "ECIR17",
+            "P_6": "ECIR17"
+        },
+        "FRIDAY" : {
+            "P_1": "E8",
+            "P_2": "E9",
+            "P_3": "ECPC81"
+        }
+    }
+}
