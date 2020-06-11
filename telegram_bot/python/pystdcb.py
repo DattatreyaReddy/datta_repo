@@ -143,7 +143,7 @@ class stdchat:
         '''
         update.message.reply_text(text='''Please Send a \n*Valid Message or Command* ''', parse_mode= 'Markdown')
         update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
-        return self.Menu_opt_MH
+        return self.menu(update , context) 
 
         # self.menu(update,context)
 
