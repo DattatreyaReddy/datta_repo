@@ -416,13 +416,13 @@ class tchchat:
             for i in perlst:
                 text = text + i[0] + " : " + i[1]+"\n"
             if len(text)>19:
-                del context.user_data['Grdttsub']
+                #del context.user_data['Grdttsub']
                 update.message.reply_text(text=text)
             else:
-                print(hi)
+                #print(hi)
                 update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))     
         else:
-            print(hi)
+            #print(hi)
             update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))
         return self.Grade_sub_MH
 
