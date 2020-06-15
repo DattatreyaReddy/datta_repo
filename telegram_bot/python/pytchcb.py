@@ -35,7 +35,7 @@ class tchchat:
         dp =  self.updater.dispatcher
         j =  self.updater.job_queue
         j.run_daily(self.updaytt,datetime.time(11,0,0,0),(0,1,2,3,4),context=telegram.ext.CallbackContext)
-        j.run_daily(self.callback_daily,datetime.time(18,47,0,0),(0,1,2,3,4),context=telegram.ext.CallbackContext)
+        j.run_daily(self.callback_daily,datetime.time(18,47,0,0),(0,1,2,3,6),context=telegram.ext.CallbackContext)
 
         Daily_tt_cov =  ConversationHandler(
                     entry_points=[MessageHandler((Filters.text("Daily Timetable")),self.daykb)],
