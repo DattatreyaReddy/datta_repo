@@ -32,7 +32,7 @@ class stdchat:
         self.updater = Updater(token=tkn,persistence=pp,use_context=True)
         dp =  self.updater.dispatcher
         j =  self.updater.job_queue
-        j.run_daily(self.callback_daily,datetime.time(18,47,0,0),(0,1,2,3,4),context=telegram.ext.CallbackContext)
+        j.run_daily(self.callback_daily,datetime.time(18,47,0,0),(0,1,2,3,6),context=telegram.ext.CallbackContext)
         
         # Daily timetable conv
 
