@@ -93,7 +93,6 @@ class teleDb:
                     period_id = self.cur.fetchone()[0]
                     self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? AND grade_id = ?', (subject, grade_id))
                     subject_id = self.cur.fetchone()[0]
-                    #print(grade_id,day_id,period_id,subject_id)
                     self.cur.execute('''INSERT OR IGNORE INTO TIMETABLE_TB (day_id,period_id,subject_id) VALUES ( ?, ?, ?)''', (day_id,period_id,subject_id) ) #TimeTable
         self.conn.commit()
 
@@ -122,7 +121,6 @@ class teleDb:
                     period_id = self.cur.fetchone()[0]
                     self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? AND grade_id = ?', (subject, grade_id))
                     subject_id = self.cur.fetchone()[0]
-                    #print(grade_id,day_id,period_id,subject_id)
                     self.cur.execute('''INSERT OR IGNORE INTO TIMETABLE_TB (day_id,period_id,subject_id) VALUES ( ?, ?, ?)''', (day_id,period_id,subject_id) ) #TimeTable
         self.conn.commit()
 
@@ -197,7 +195,6 @@ class teleDb:
         self.cur.execute('SELECT id FROM PERIOD_TB WHERE period = ? ', (self.period, ))
         period_id = self.cur.fetchone()[0] 
         try:
-            # self.cur.fetchone()[0]
             self.cur.execute('''INSERT INTO TIMETABLE_TB(day_id,period_id, subject_id) VALUES ( ?, ?,  ?) ''',(day_id,period_id,subject_id))
             self.conn.commit()
             self.cur.execute('''SELECT SUBJECT_TB.subject FROM TIMETABLE_TB JOIN SUBJECT_TB ON TIMETABLE_TB.subject_id = SUBJECT_TB.id 
@@ -223,7 +220,6 @@ class teleDb:
                 self.cur.execute('''INSERT OR IGNORE INTO USER_TB (chat_id,roll_no,grade_id) VALUES ( ?, ?, ?)''', (self.chat_id,self.roll_no,grade_id) )
             else:
                 self.cur.execute('''UPDATE USER_TB SET roll_no = ? , grade_id = ? WHERE chat_id = ?''',(self.roll_no,grade_id,self.chat_id ))
-            # self.conn.commit()
             self.cur.execute('SELECT id FROM SUBJECT_TB WHERE grade_id = ?',(grade_id,))
             sublst = self.cur.fetchall()
             self.cur.execute('SELECT id FROM USER_TB WHERE roll_no = ? AND chat_id = ?',(self.roll_no,self.chat_id))
@@ -274,7 +270,6 @@ class teleDb:
         if ((self.attend_pcls == 0 or self.attend_pcls == 1) and self.attend_tcls == 1 ):
             self.attend_pcls = self.attend_pcls + int(attend[0][0])
             self.attend_tcls = self.attend_tcls + int(attend[0][1])
-        #print(self.attend_pcls,self.attend_tcls)
         self.cur.execute('UPDATE ATTEND_TB SET attend_pcls = ? , attend_tcls = ? WHERE user_id = ? AND subject_id =?',(self.attend_pcls,self.attend_tcls,user_id,subject_id ))
         self.conn.commit()
 
@@ -308,7 +303,6 @@ class teleDb:
         '''
             Returns list of tuples of user id of students
         '''
-        # self.cur.execute('SELECT USER_TB.chat_id,GRADE_TB.grade FROM USER_TB JOIN GRADE_TB ON USER_TB.grade_id = GRADE_TB.id')
         self.cur.execute('SELECT chat_id FROM USER_TB')
         return self.cur.fetchall()
 
@@ -316,7 +310,6 @@ class teleDb:
         '''
             Returns list of tuples of user id of teachers
         '''
-        # self.cur.execute('SELECT USER_TB.chat_id,GRADE_TB.grade FROM USER_TB JOIN GRADE_TB ON USER_TB.grade_id = GRADE_TB.id')
         self.cur.execute('SELECT chat_id FROM TCHUSR_TB')
         return self.cur.fetchall()
 
