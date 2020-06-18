@@ -15,7 +15,6 @@ class stdchat:
     '''
     #Constants to use in dict as keys for Conversation Handler
     Setup_MH, Rollupd_MH, Menu_opt_MH, Day_MH, Set_Atd_MH, Set_Atdpa_MH= range(6)
-    updusr = False
 
     #init function
 
@@ -25,9 +24,8 @@ class stdchat:
             Adds message handlers, nested conversation handlers,
             starts polling
         '''
-        # self.Setup_CH,self.Timetable_CH,self.Daily_Timetable_CH,self.Get_Attendance_CH,self.Set_Attendance = range(5)
         self.db = db
-        self.daylst = ['Monday','Tuesday','Wednesday','Thursday','Friday',"Go to Menu"]
+        self.daylst = ['Monday','Tuesday','Wednesday','Thursday','Friday',"Back"]
         pp = PicklePersistence(filename='data/Stdcraltbot')
         self.updater = Updater(token=tkn,persistence=pp,use_context=True)
         dp =  self.updater.dispatcher
@@ -39,16 +37,13 @@ class stdchat:
         Daily_tt_cov = ConversationHandler(
                     entry_points=[MessageHandler((Filters.text("Daily Timetable")),self.daykb)],
                     states= {
-                        self.Day_MH : [MessageHandler((Filters.text & (Filters.regex(r".*DAY") | Filters.regex(r".*day") ) 
+                        self.Day_MH : [MessageHandler((Filters.text & (Filters.regex(r".*[Dd][Aa][Yy]") ) 
                                                             & (~Filters.command)),self.stddtt),
-                                            MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                            MessageHandler((Filters.text('Back')),self.bckmenu)
+                                            ]
                     },
                     allow_reentry= True,
-                     map_to_parent={self.Menu_opt_MH : self.Menu_opt_MH,
-                                        #self.Rollupd_MH : self.Rollupd_MH
-                                        },
-                    fallbacks = [MessageHandler((Filters.command ),self.default)],
-                   
+                    fallbacks = [MessageHandler((~ Filters.regex('.*[Dd][Aa][Yy]') & ~ Filters.text('Back')),self.ivdlyday)],
                     name= "dailyttcov",
                     persistent=True
                 )
@@ -60,29 +55,25 @@ class stdchat:
                                     Filters.regex(r"^[Ee][0-9]$") | Filters.regex(r"^T&P$") ) ),self.selsubatd)],
                     states= {
                     self.Set_Atdpa_MH : [MessageHandler(((Filters.text("Present") | Filters.text("Absent") |
-                                        Filters.regex(r"^..:..$") | Filters.regex(r"..?:..?") ) & (~Filters.command)),self.setsubat),
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        Filters.regex(r"..?:..?") ) & (~Filters.command)),self.setsubat),
+                                        MessageHandler((Filters.text('Back')),self.bckgetsublst)
+                                        ]
                     },
                     allow_reentry= True,
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH,self.Set_Atd_MH : self.Set_Atd_MH,
-                                        #self.Rollupd_MH : self.Rollupd_MH
-                                        },
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    
+                    fallbacks = [MessageHandler(( ~Filters.text("Present") & ~Filters.text("Absent") & ~Filters.regex(r"..?:..?") & ~Filters.text('Back') ),self.ivatdpa)],
                     name= "atdpacov",
                     persistent=True
                 )
         Set_atd_cov = ConversationHandler(
                     entry_points=[MessageHandler((Filters.text("Set Attendance")),self.getsubkb)],
                     states= {
-                        self.Set_Atd_MH : [Set_atdpa_cov,MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                        self.Set_Atd_MH : [Set_atdpa_cov,
+                                            MessageHandler((Filters.text('Back')),self.bckmenu)
+                                            ]
                     },
                     allow_reentry= True,
-                    map_to_parent={self.Menu_opt_MH : self.Menu_opt_MH,
-                                        #self.Rollupd_MH: self.Rollupd_MH
-                                        },
-
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
+                    fallbacks = [MessageHandler(((~ Filters.regex(r"^[A-Za-z][A-Za-z][A-Za-z][A-Za-z][0-9][0-9]$") & 
+                                    ~ Filters.regex(r"^[Ee][0-9]$") & ~Filters.regex(r"^T&P$") & ~Filters.text('Back')) ),self.ivatdsub)],
                     name= "atdcov",                    
                     persistent=True
                 )
@@ -90,16 +81,15 @@ class stdchat:
         # Menu conv
         
         Menu_cov = ConversationHandler(
-                    entry_points=[MessageHandler((Filters.text('Go to Menu') | Filters.text('Cancel')) ,self.menu)],
+                    entry_points=[MessageHandler((Filters.text('Menu') | Filters.text('Cancel')) ,self.menu)],
                     states= {
                         self.Menu_opt_MH : [MessageHandler((Filters.text("Today's Timetable")),self.stdtdt),
-                                                MessageHandler((Filters.text('Go to Menu')),self.menu),
                                                 Daily_tt_cov,MessageHandler((Filters.text("Get Attendance")),self.getstdatd),
                                                 Set_atd_cov,(MessageHandler(Filters.text('Change Your ROLL NO'),self.rollupd))]
                     },
                     allow_reentry= True,
-                    map_to_parent={self.Rollupd_MH: self.Rollupd_MH},
-                    fallbacks = [MessageHandler((Filters.command) & ~Filters.text('Cancel'),self.default)],
+                    fallbacks = [MessageHandler(~Filters.text("Today's Timetable") & ~Filters.text("Get Attendance") 
+                                        & ~Filters.text('Change Your ROLL NO') & ~Filters.text("Set Attendance") & ~Filters.text("Daily Timetable"),self.ivmnuopt)],
                     name= "menucov",
                     persistent=True
                 )
@@ -114,16 +104,15 @@ class stdchat:
                                                 Menu_cov]
                     },
                     allow_reentry= True,
-                    fallbacks=[MessageHandler((Filters.command),self.ivroll)],
+                    fallbacks=[MessageHandler(~Filters.regex(r'^[CcEe][SsCc][Ee][1-2][0-9][Uu]0[0-3][0-9]$') & ~Filters.text('Menu') & ~Filters.text('Cancel'), self.ivroll ),
+                                ],
                     name= "setupcov",
                     persistent=True,
                 )
         
         dp.add_handler(Setup_cov)
         dp.add_error_handler(self.error)
-        # self.updater.start_polling()
-        # print("Getting Updates of CR_ALT")
-        # self.updater.idle()
+        
 
     # Invalid input functions
     def error(self,update, context):
@@ -132,20 +121,56 @@ class stdchat:
 
 
     def ivroll(self, update, context):
-        ''' Function to send error when user enters Invalid Roll Number'''
-        update.message.reply_text(text='''*Invalid Roll Number*''', parse_mode= 'Markdown')
-        update.message.reply_text(text='''Please try again \n*Valid Roll Number* ''', parse_mode= 'Markdown')
-        return self.Setup_MH
-        
-    def default(self, update, context):
-        '''
-            Default function, Executed when Bot get undesired input
-        '''
-        update.message.reply_text(text='''Please Send a \n*Valid Message or Command* ''', parse_mode= 'Markdown')
-        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
-        return self.menu(update , context) 
+        ''' Function to send error when user enters Invalid Roll Number in Roll no setup cov'''
+        update.message.reply_text(text='''*Invalid or Already registered Roll Number*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please try again with  \n*A Valid Roll Number*''', parse_mode= 'Markdown')
+        if context.user_data['updusr']:
+            return self.Rollupd_MH
+        else:
+            return self.Setup_MH
 
-        # self.menu(update,context)
+    def ivdlyday(self, update, context):
+        ''' Function to send error when user enters Invalid Day in daily timetable'''
+        update.message.reply_text(text='''Please Send \n*A Valid Day*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD*''', parse_mode= 'Markdown')
+        return self.Day_MH
+
+    def ivatdpa(self, update, context):
+        ''' Function to send error when user enters Invalid Attendance in attendance cov'''
+        update.message.reply_text(text='''Please Send  \n*Present, Absent or \nAttendance in pp:tt pattern*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD*''', parse_mode= 'Markdown')
+        return self.Set_Atdpa_MH
+        
+    def ivatdsub(self, update, context):
+        ''' Function to send error when user enters Invalid Subject in Set attendance cov'''
+        update.message.reply_text(text='''Please Send \n*A Valid Subject*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD*''', parse_mode= 'Markdown')
+        return self.Set_Atd_MH
+        
+    def ivmnuopt(self, update, context):
+        '''
+            Executed when Bot get undesired input in Menu cov
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Option*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return Menu_opt_MH
+
+
+    # Go Back functions
+    def bckmenu(self,update,context):
+        '''
+            End the first level conv and send back to main menu
+        '''
+        self.menu(update,context)
+        return END
+
+    def bckgetsublst(self,update,context):
+        '''
+            End the second level conv of attend function and send back to subject list
+        '''
+        self.getsubkb(update,context)
+        return END
+
 
     # Jobqueue Functions
 
@@ -171,6 +196,7 @@ class stdchat:
             Function to execute when /start is input and asks for user roll_no or id_no 
         '''
         roll_no = self.db.chkusr(update.effective_chat.id)
+        context.user_data['updusr'] = False
         if roll_no == None:
             update.message.reply_text(text='''Hi! {}'''.format(update.message.from_user.first_name), parse_mode= 'Markdown')
             update.message.reply_text(text='''Welcome to your Personal\nTimetable and attendance Manager - \n             " *CR ALT* "''', parse_mode= 'Markdown')
@@ -179,16 +205,16 @@ class stdchat:
         else:
             update.message.reply_text(text='''Welcome! {}'''.format(update.message.from_user.first_name), parse_mode= 'Markdown')
             update.message.reply_text(text='''You have logged in with *{}*'''.format(roll_no), parse_mode= 'Markdown')
-            update.message.reply_text("Click on *Go to Menu* to visit Menu", parse_mode= 'Markdown',reply_markup=telegram.ReplyKeyboardMarkup([["Go to Menu"]]))
+            update.message.reply_text("Click on *Menu* to visit Menu", parse_mode= 'Markdown',reply_markup=telegram.ReplyKeyboardMarkup([["Menu"]]))
             return self.Rollupd_MH
 
     def rollno(self, update, context):
         '''
             Function to link the roll number with chat id 
         '''
-        rollno = self.db.usrsetup(update.effective_chat.id,(update.message.text).upper(),self.updusr)
+        rollno = self.db.usrsetup(update.effective_chat.id,(update.message.text).upper(),context.user_data['updusr'])
         if rollno:
-            self.updusr = False
+            context.user_data['updusr'] = False
             update.message.reply_text(text="Your Roll no {}, \n linked to your account \nSuccessfully".format(rollno))
             update.message.text = rollno
             return self.start(update, context)  
@@ -199,9 +225,9 @@ class stdchat:
         '''
             Updates User roll no
         '''
-        self.updusr = True
+        context.user_data['updusr'] = True
         update.message.reply_text("Please Enter Your *IIITT* roll no to login:", parse_mode= 'Markdown', reply_markup=telegram.ReplyKeyboardMarkup([["Cancel"]]))
-        return self.Rollupd_MH
+        return END
 
     # Menu Functions
 
@@ -251,13 +277,11 @@ class stdchat:
             text = self.stdtt(update.effective_chat.id,(update.message.text).capitalize())
             if text == "No Classes":
                 update.message.reply_text(text="No Classes on {}".format((update.message.text).capitalize()))
-                return self.Day_MH
             else:
                 update.message.reply_text(text=text)
-                return self.Day_MH
         else:
             update.message.reply_text(text="No Classes on {}".format((update.message.text).capitalize()))
-            return self.Day_MH
+        return self.Day_MH
     
     def daykb (self, update, context):
         '''
@@ -267,6 +291,7 @@ class stdchat:
         update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Day_MH
 
+    
     # Get student's Attendance Functions
     
     def getstdatd (self, update, context):
@@ -283,8 +308,6 @@ class stdchat:
                 per = float("{:.1f}".format(per))
                 if (per>75):
                     bnk = int((4/3)*int(i[1]))-int(i[2])
-                   # if float(int(bnk)) != bnk:
-                   #     bnk = int(bnk)+1
                 else:
                     bnk = (3*int(i[2])-4*int(i[1]))
             text = text + str(i[0]) + ' : ' + str(i[1]) + ' : ' + str(i[2]) + ' : ' + str(per) + " : " + str(bnk)+"\n"
@@ -298,7 +321,7 @@ class stdchat:
             Send subjects as keyboard
         '''
         sublst=self.db.getsubgrd(self.db.getusrgrd(update.effective_chat.id))
-        text = [["Go to Menu"]]
+        text = [["Back"]]
         for i in sublst:
             text.append([i[0]])
         bot.send_message(chat_id=update.effective_chat.id, text='''Select a Subject from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
@@ -309,7 +332,7 @@ class stdchat:
             Asks user for the status of the given subject (Present,Absent)
         '''
         context.user_data['Subject'] = (update.message.text).upper()
-        text = [["Present","Absent"],["Go to Menu"]]
+        text = [["Present","Absent"],["Back"]]
         update.message.reply_text(text='''Select the status of {}\n '''.format((update.message.text).upper()), reply_markup=telegram.ReplyKeyboardMarkup(text))
         update.message.reply_text(text='''If you want to enter \nthe pnt and ttl class \nseperatly then enter\nThem in this pattern - \n *pp:tt* or *p:t* or *p:tt* \n(ex: 05:10)-\n5 out of 10 classes attended''', parse_mode= 'Markdown')
         return self.Set_Atdpa_MH
@@ -339,8 +362,12 @@ class stdchat:
                 except:
                     bot.send_message(chat_id=update.effective_chat.id, text="Invalid Input, Try Again")
         self.getstdatd(update,context)
-        return self.getsubkb( update, context)
+        self.getsubkb( update, context)
+        return END
         
 if __name__ == '__main__':
     db = teleDb()
     hi = stdchat(db)
+    self.updater.start_polling()
+    print("Getting Updates of CR_ALT")
+    self.updater.idle()

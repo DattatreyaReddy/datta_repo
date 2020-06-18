@@ -8,8 +8,8 @@ stdtkn = open('data/stdtkn.txt').read()
 tchtkn = open('data/tchtkn.txt').read()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
-
 logger = logging.getLogger(__name__)
+END = ConversationHandler.END
 periodlst = ['10.10-11.00','11.00-11.50','11.50-12.40','01.30-02.20','02.20-03.10','03.10-04.00']
 class tchchat:
     '''
@@ -18,7 +18,7 @@ class tchchat:
 
     #Constants to use in dict as keys for Conversation Handler
     Setup_MH, Empupd_MH, Menu_opt_MH, Day_MH, Grade_btt_MH, Grade_sub_MH, Announce_grd_MH, Announce_msg_MH, Announce_conf_MH = range(9)
-    Take_cls_MH,Take_grd_MH, Take_day_MH, Ccl_cls_MH, Ccl_day_MH, Ccl_grd_MH= range(9,15)
+    Take_cls_MH,Take_grd_MH, Take_day_MH, Ccl_cls_MH, Ccl_day_MH, Ccl_grd_MH, STOPPING= range(9,16)
     updtch = False
     END = ConversationHandler.END
     #init function
@@ -29,7 +29,7 @@ class tchchat:
             starts polling
         '''
         self.db = db
-        self.daylst = ['Monday','Tuesday','Wednesday','Thursday','Friday',"Go to Menu"]
+        self.daylst = ['Monday','Tuesday','Wednesday','Thursday','Friday',"Back"]
         pp = PicklePersistence(filename='data/Tchcraltbot')
         self.updater = Updater(token=tchtkn,persistence=pp,use_context=True)
         dp =  self.updater.dispatcher
@@ -37,28 +37,32 @@ class tchchat:
         j.run_daily(self.updaytt,datetime.time(11,0,0,0),(0,1,2,3,4),context=telegram.ext.CallbackContext)
         j.run_daily(self.callback_daily,datetime.time(18,47,0,0),(0,1,2,3,6),context=telegram.ext.CallbackContext)
 
+        # daily timetable cov
+
         Daily_tt_cov =  ConversationHandler(
                     entry_points=[MessageHandler((Filters.text("Daily Timetable")),self.daykb)],
                     states= {
-                        self.Day_MH : [MessageHandler((Filters.regex("^#.*[dD][aA][yY]$")),self.tchdtt),
-                                        MessageHandler(Filters.text('Go to Menu'),self.menu)]
+                        self.Day_MH : [MessageHandler((Filters.regex(".*[dD][aA][yY]$")),self.tchdtt),
+                                        MessageHandler((Filters.text('Back')),self.bckmenu)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex(".*[dD][aA][yY]$") & ~Filters.text('Back') ),self.ivdlyday)],
                     name= "dailyttcov",
                     persistent=True
                 )
 
+        # Grade timetable cov
+
         Grade_tt_sub_cov = ConversationHandler(
                     entry_points=[MessageHandler((Filters.regex("^[CEce][SsCc][Ee][0-9][0-9]$") ),self.grdttdaykb)],
                     states= {
-                        self.Grade_sub_MH : [MessageHandler((Filters.regex("^@.*[dD][aA][yY]$")),self.grddtt),
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                        self.Grade_sub_MH : [MessageHandler((Filters.regex(".*[dD][aA][yY]$")),self.grddtt),
+                                        MessageHandler((Filters.text('Back')),self.bckgrdgrdkb),CommandHandler('menu', self.menucall)
+                                        ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH,
+                    fallbacks = [MessageHandler((~Filters.regex(".*[dD][aA][yY]$") & ~Filters.text('Back') & ~Filters.command('menu')),self.ivgrdday)],#
+                    map_to_parent={ self.STOPPING : END,
                                     self.Grade_btt_MH: self.Grade_btt_MH},
                     name= "gradesubcov",
                     persistent=True
@@ -68,24 +72,26 @@ class tchchat:
                     entry_points=[MessageHandler((Filters.text("Batch Timetable")),self.grdgrdkb)],
                     states= {
                         self.Grade_btt_MH : [Grade_tt_sub_cov,
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckmenu)
+                                        ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex("^[CEce][SsCc][Ee][0-9][0-9]$") & ~Filters.text('Back')),self.ivgrdgrd)],
                     name= "gradebttcov",
                     persistent=True
                 )
+
+        # Announcement cov
 
         Announce_conf_cov =  ConversationHandler(
                     entry_points=[MessageHandler((Filters.regex('^MSG-.*')),self.anncon)],
                     states= {
                         self.Announce_conf_MH : [MessageHandler((Filters.text('Send')),self.annsnd),
-                                        MessageHandler((Filters.text('Go to Menu')| Filters.text('Cancel')),self.menu)]
+                                        MessageHandler(Filters.text('Back'),self.bckannmsg),CommandHandler('menu', self.menucall)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH,
+                    fallbacks = [MessageHandler((~Filters.text('Send') & ~Filters.text('Back') & ~Filters.command('menu')),self.ivanncon)],
+                    map_to_parent={ self.STOPPING : self.STOPPING,
                                     self.Announce_grd_MH: self.Announce_grd_MH},
                     name= "annconfcov",
                     persistent=True
@@ -93,14 +99,14 @@ class tchchat:
 
 
         Announce_msg_cov = ConversationHandler(
-                    entry_points=[MessageHandler((Filters.regex("^-[CEce][SsCc][Ee][0-9][0-9]$") ),self.annmsg)],
+                    entry_points=[MessageHandler((Filters.regex("^[CEce][SsCc][Ee][0-9][0-9]$") ),self.annmsg)],
                     states= {
                         self.Announce_msg_MH : [Announce_conf_cov,
-                                        MessageHandler((Filters.text('Go to Menu')| Filters.text('Cancel')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckanngrdkb),CommandHandler('menu', self.menucall)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH,
+                    fallbacks = [MessageHandler((~Filters.regex('^MSG-.*') & ~Filters.text('Back') & ~Filters.command('menu')),self.ivannmsg)],
+                    map_to_parent={ self.STOPPING : END,
                                     self.Announce_grd_MH: self.Announce_grd_MH},
                     name= "annmsgcov",
                     persistent=True
@@ -110,24 +116,26 @@ class tchchat:
                     entry_points=[MessageHandler((Filters.text("Announcement")),self.anngrdkb)],
                     states= {
                         self.Announce_grd_MH : [Announce_msg_cov,
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckmenu)
+                                        ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex("^[CEce][SsCc][Ee][0-9][0-9]$") & ~Filters.text('Back')),self.ivanngrd)],
                     name= "anngrdcov",
                     persistent=True
                 )
 
+        # Take class cov
+
         Take_day_cov = ConversationHandler(
-                    entry_points=[MessageHandler(Filters.regex("^>.*[dD][aA][yY]$"),self.tkeperkb)],
+                    entry_points=[MessageHandler(Filters.regex(".*[dD][aA][yY]$"),self.tkeperkb)],
                     states= {
                         self.Take_day_MH : [MessageHandler(Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]$"),self.tkecls),
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bcktkedaykb),CommandHandler('menu', self.menucall)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]$") & ~Filters.text('Back') & ~Filters.command('menu')),self.ivtkper)],
+                    map_to_parent={ self.STOPPING : self.STOPPING},
                     name= "tkedaycov",
                     persistent=True
                 )
@@ -137,11 +145,11 @@ class tchchat:
                         Filters.regex(r"^[CEce][SsCc][Ee][0-9][0-9]:[Ee][0-9]$") | Filters.regex(r"^[CEce][SsCc][Ee][0-9][0-9]:T&P$")),self.tkedaykb)],
                     states= {
                         self.Take_grd_MH : [Take_day_cov,
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bcktkegrdkb),CommandHandler('menu', self.menucall)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex(".*[dD][aA][yY]$") & ~Filters.text('Back') & ~Filters.command('menu')),self.ivtkday)],#
+                    map_to_parent={ self.STOPPING : END},
                     name= "tkegrdcov",
                     persistent=True
                 )
@@ -150,28 +158,36 @@ class tchchat:
                     entry_points=[MessageHandler((Filters.text("Take Class")),self.tkegrdkb)],
                     states= {
                         self.Take_cls_MH : [Take_grd_cov,
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckmenu)]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler((~Filters.regex(r"^[CEce][SsCc][Ee][0-9][0-9]:[A-Za-z][A-Za-z][A-Za-z][A-Za-z][0-9][0-9]$") & 
+                        ~Filters.regex(r"^[CEce][SsCc][Ee][0-9][0-9]:[Ee][0-9]$") & ~Filters.regex(r"^[CEce][SsCc][Ee][0-9][0-9]:T&P$")),self.ivtkgs),
+                        MessageHandler((~Filters.text('Back')),self.ivtkgs)],
                     name= "tkeclscov",
                     persistent=True
                 )
 
+        # cancel class cov
+
         Ccl_day_cov = ConversationHandler(
-                    entry_points=[MessageHandler(Filters.regex("^:.*[dD][aA][yY]$"),self.ccgrdkb)],
+                    entry_points=[MessageHandler(Filters.regex(".*[dD][aA][yY]$"),self.ccgrdkb)],
                     states= {
                         self.Ccl_day_MH : [(MessageHandler(
                         (Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:[A-Za-z][A-Za-z][A-Za-z][A-Za-z][0-9][0-9]$")) |
                         (Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:[Ee][0-9]$")) |
                         (Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:T&P$")),self.ccls)),
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckccdaykb),CommandHandler('menu', self.menucall)
+                                        ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH,
-                                    self.Ccl_cls_MH: self.Ccl_cls_MH},
+                    fallbacks = [(MessageHandler(
+                        (~Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:[A-Za-z][A-Za-z][A-Za-z][A-Za-z][0-9][0-9]$")) &
+                        (~Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:[Ee][0-9]$")) &
+                        (~Filters.regex(r"^[0-9][0-9].[0-9][0-9]-[0-9][0-9].[0-9][0-9]:[CEce][SsCc][Ee][0-9][0-9]:T&P$")),self.ivccpgs)),
+                        MessageHandler((~Filters.text('Back') & ~Filters.command('menu')),self.ivccpgs)],
+                    map_to_parent={self.STOPPING : END
+                                    },
                     name= "ccldaycov",
                     persistent=True
                 )
@@ -180,33 +196,36 @@ class tchchat:
                     entry_points=[MessageHandler((Filters.text("Cancel Class")),self.ccdaykb)],
                     states= {
                         self.Ccl_cls_MH : [Ccl_day_cov,
-                                        MessageHandler((Filters.text('Go to Menu')),self.menu)]
+                                        MessageHandler((Filters.text('Back')),self.bckmenu)
+                                        ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command),self.default)],
-                    map_to_parent={self.Menu_opt_MH: self.Menu_opt_MH},
+                    fallbacks = [MessageHandler(~Filters.text('Back') & ~Filters.regex(".*[dD][aA][yY]$"),self.ivccday)],
                     name= "cclclscov",
                     persistent=True
         )
 
+        # Menu cov 
+
         Menu_cov = ConversationHandler(
-                    entry_points=[MessageHandler((Filters.text('Go to Menu') | Filters.text('Cancel')) ,self.menu)],
+                    entry_points=[MessageHandler((Filters.text('Menu') | Filters.text('Cancel')) ,self.menu)],
                     states= {
                         self.Menu_opt_MH : [MessageHandler(Filters.text("Today's Timetable"),self.tchtdt),
-                                                MessageHandler(Filters.text('Go to Menu'),self.menu),
                                                 MessageHandler(Filters.text('Change Your EMPLOYEE ID'),self.empupd),
                                                 Daily_tt_cov,Take_cls_cov,Ccl_cls_cov,
                                                 Grade_tt_btt_cov,Announce_grd_cov
                                                 ]
                     },
                     allow_reentry= True,
-                    fallbacks = [MessageHandler((Filters.command)& ~Filters.text('Cancel'),self.default)],
-                    map_to_parent={self.Empupd_MH : self.Empupd_MH},
+                    fallbacks = [MessageHandler((~Filters.command('menu')) & ~Filters.text("Today's Timetable") 
+                                    & ~Filters.text('Change Your EMPLOYEE ID') & ~Filters.text("Cancel Class") 
+                                    & ~Filters.text("Take Class") & ~Filters.text("Announcement") 
+                                    & ~Filters.text("Batch Timetable") & ~Filters.text("Daily Timetable"),self.ivmnuopt)],
                     name= "menucov",
                     persistent=True
                 )
 
-
+        # Start cov
 
         Setup_cov = ConversationHandler(
                 entry_points=[CommandHandler('start', self.start)],
@@ -216,16 +235,15 @@ class tchchat:
                                             Menu_cov]
                 },
                 allow_reentry= True,
-                fallbacks=[MessageHandler((Filters.command),self.default)],
+                fallbacks=[MessageHandler((~ Filters.regex('^[iI][Ii][Ii][Tt][tT]0[0-9][0-9]$')) & (~Filters.command('menu'))
+                                                & ~Filters.text('Menu') & ~Filters.text('Cancel'),self.ivid)],
                 name= "setupcov",
                 persistent=True
             )
 
         dp.add_handler(Setup_cov)
         dp.add_error_handler(self.error)
-        # self.updater.start_polling()
-        # print("Getting Updates of CR_ALT(TCH)")
-        # self.updater.idle()
+        
 
     # Jobqueue Functions
     def updaytt(self,context: telegram.ext.CallbackContext):
@@ -262,13 +280,175 @@ class tchchat:
         logger.warning('caused error "%s"', context.error)
 
 
-    def default(self, update, context):
+    def ivid(self, update, context):
         '''
-            Default function, Executed when Bot get undesired input
+            Function to send error when user enters Invalid Roll Number in Roll no setup cov
         '''
-        update.message.reply_text(text='''Please Send a \n*Valid Message or Command* ''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''*Invalid or Already registered Employee ID*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please try again with  \n*A Valid Roll Number*''', parse_mode= 'Markdown')
+        if context.user_data['updtch']:
+            return self.Empupd_MH
+        else:
+            return self.Setup_MH
+
+    def ivmnuopt(self, update, context):
+        '''
+            Executed when Bot get undesired input in Menu cov
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Option*''', parse_mode= 'Markdown')
         update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
-        return self.menu(update, context)
+        return self.Menu_opt_MH
+
+    def ivccday(self, update, context):
+        '''
+            Executed when Bot get undesired input in Cancel cls cov -  day input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Day*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Ccl_cls_MH
+
+    def ivccpgs(self, update, context):
+        '''
+            Executed when Bot get undesired input in Cancel cls cov - Period:Grade:Subject input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Period*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Ccl_day_MH
+
+    def ivtkgs(self, update, context):
+        '''
+            Executed when Bot get undesired input in Take cls cov - Grade:Subject input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Subject*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Take_cls_MH
+
+    def ivtkday(self, update, context):
+        '''
+            Executed when Bot get undesired input in Take cls cov -  day input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Day*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Take_grd_MH
+
+    def ivtkper(self, update, context):
+        '''
+            Executed when Bot get undesired input in Take cls cov - Period input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Period*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Take_day_MH
+
+    def ivanngrd(self, update, context):
+        '''
+            Executed when Bot get undesired input in Announcement cov - Grade input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Grade*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Announce_grd_MH
+
+    def ivannmsg(self, update, context):
+        '''
+            Executed when Bot get undesired input in Announcement cov - msg input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Message*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please Start the message with \n* MSG-* ''', parse_mode= 'Markdown')
+        return self.Announce_msg_MH
+
+    def ivanncon(self, update, context):
+        '''
+            Executed when Bot get undesired input in Announcement cov - msg input
+        '''
+        update.message.reply_text(text='''Please Send Either \n*Send* or *Back*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD*''', parse_mode= 'Markdown')
+        return self.Announce_conf_MH
+
+    def ivgrdgrd(self, update, context):
+        '''
+            Executed when Bot get undesired input in Grade cov - Grade input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Grade*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Grade_btt_MH
+
+    def ivgrdday(self, update, context):
+        '''
+            Executed when Bot get undesired input in Grade cov -  day input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Day*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Grade_sub_MH
+
+    def ivdlyday(self, update, context):
+        '''
+            Executed when Bot get undesired input in Grade cov -  day input
+        '''
+        update.message.reply_text(text='''Please Send a \n*Valid Day*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please prefer using\n*CUSTOM KEYBOARD* ''', parse_mode= 'Markdown')
+        return self.Day_MH
+
+    # Go Back functions
+    def bckmenu(self,update,context):
+        '''
+            End the first level conv and send back to main menu
+        '''
+        self.menu(update,context)
+        return END
+
+    def bckgrdgrdkb(self,update,context):
+        '''
+            End the second level conv of grade timetable
+            and send back to grade list level(First level)
+        '''
+        self.grdgrdkb(update,context)
+        return END
+
+    def bckccdaykb(self,update,context):
+        '''
+            End the second level conv of Cancel class
+            and send back to grade list level(Second level)
+        '''
+        self.ccdaykb(update,context)
+        return END
+
+    def bcktkegrdkb(self,update,context):
+        '''
+            End the second level conv of Take class
+            and send back to grade:subject list level(First level)
+        '''
+        self.tkegrdkb(update,context)
+        return END
+
+    def bcktkedaykb(self,update,context):
+        '''
+            End the Third level conv of Take class
+            and send back to Day list level(Second level)
+        '''
+        self.tkedaykb(update,context)
+        return END
+        
+    def bckanngrdkb(self,update,context):
+        '''
+            End the second level conv of announcement class
+            and send back to Grade list level(first level)
+        '''
+        self.anngrdkb(update,context)
+        return END
+
+    def bckannmsg(self,update,context):
+        '''
+            End the Third level conv of announcement class
+            and send back to Message level(first level)
+        '''
+        self.annmsg(update,context)
+        return END
+
+    def menucall (self,update,context):
+        '''
+            Return to the menu
+        '''
+        self.menu(update,context)
+        return self.STOPPING
 
     # Start or Setup Functions
 
@@ -277,25 +457,26 @@ class tchchat:
             Function to execute when /start is input and asks for user employee id 
         '''
         emp_id = self.db.chktch(update.effective_chat.id)
+        context.user_data['updtch'] = False
         if emp_id == None:
             update.message.reply_text(text='''Hi ! {}'''.format(update.message.from_user.first_name), parse_mode= 'Markdown')
             update.message.reply_text(text='''Welcome to your Personal\nTimetable and Announcement Manager - \n             " *CR ALT* "''', parse_mode= 'Markdown')
             update.message.reply_text(text='''Please enter  *Your IIITT Employee ID* for Signing up''', parse_mode= 'Markdown')
             return self.Setup_MH
         else:
-            text = [['Go to Menu']]
+            text = [['Menu']]
             update.message.reply_text(text='''Welcome! {}'''.format(update.message.from_user.first_name), parse_mode= 'Markdown')
             update.message.reply_text(text='''You have logged in with {}'''.format(emp_id), parse_mode= 'Markdown')
-            update.message.reply_text("Click on *Go to Menu* to visit Menu", parse_mode= 'Markdown',reply_markup=telegram.ReplyKeyboardMarkup(text))
+            update.message.reply_text("Click on *Menu* to visit Menu", parse_mode= 'Markdown',reply_markup=telegram.ReplyKeyboardMarkup(text))
             return self.Empupd_MH
 
     def empid(self, update, context):
         '''
             Function to link the Eployee id with chat id 
         '''
-        emp_id = self.db.tchsetup(update.effective_chat.id,(update.message.text).upper(),self.updtch)
+        emp_id = self.db.tchsetup(update.effective_chat.id,(update.message.text).upper(),context.user_data['updtch'])
         if emp_id:
-            self.updtch = False
+            context.user_data['updtch'] = False
             update.message.reply_text(text="Your Employee {}, \n linked to your account \nSuccessfully".format(emp_id))
             update.message.text = emp_id
             return self.start(update, context)  
@@ -306,9 +487,9 @@ class tchchat:
         '''
             Updates Teacher Employee id to the given Chat id
         '''
-        self.updtch = True
+        context.user_data['updtch'] = True
         update.message.reply_text("Please Enter Your *IIITT* Employee id :", parse_mode= 'Markdown', reply_markup=telegram.ReplyKeyboardMarkup([["Cancel"]]))
-        return self.Empupd_MH
+        return END
 
     # Menu Functions
 
@@ -358,8 +539,8 @@ class tchchat:
         '''
             Sends the Timetable of the given day to the teacher
         '''
-        if (update.message.text[1:]).capitalize() in self.daylst:
-            text = self.tchtt(update.effective_chat.id,(update.message.text[1:]).capitalize())
+        if (update.message.text).capitalize() in self.daylst:#
+            text = self.tchtt(update.effective_chat.id,(update.message.text).capitalize())#
             if text == "No Classes":
                 update.message.reply_text(text="No Classes on {}".format((update.message.text).capitalize()))
                 return self.Day_MH
@@ -374,7 +555,7 @@ class tchchat:
         '''
             Send Days as keyboard
         '''
-        text = [["#"+self.daylst[0],"#"+self.daylst[1]],["#"+self.daylst[2],"#"+self.daylst[3]],["#"+self.daylst[4],self.daylst[5]]]
+        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]
         update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Day_MH
 
@@ -385,7 +566,7 @@ class tchchat:
             Send grades as Keyboard
         '''
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
-        tchgrdlst = [["Go to Menu"]]
+        tchgrdlst = [["Back"]]
         index = 0
         for i in tchgrd:
             tchgrd.pop(index)
@@ -400,7 +581,7 @@ class tchchat:
             Stores the grade of grade timetable function,send days as keyboard 
         '''
         context.user_data['Grdttsub'] = (update.message.text).upper()
-        text = [["@"+self.daylst[0],"@"+self.daylst[1]],["@"+self.daylst[2],"@"+self.daylst[3]],["@"+self.daylst[4],self.daylst[5]]]
+        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]
         update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Grade_sub_MH
     
@@ -408,21 +589,19 @@ class tchchat:
         '''
             Returns grade timetable to teacher
         '''
-        grdday = (update.message.text)[1:]
+        grdday = (update.message.text)#
         if (grdday).capitalize() in self.daylst:
             perlst=self.db.getStdtt(context.user_data['Grdttsub'],grdday.capitalize())
-            # del context.user_data['Grdttsub']
             text = "Time     : Subject\n"
             for i in perlst:
                 text = text + i[0] + " : " + i[1]+"\n"
             if len(text)>19:
-                #del context.user_data['Grdttsub']
                 update.message.reply_text(text=text)
             else:
-                #print(hi)
+                print(hi)
                 update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))     
         else:
-            #print(hi)
+            print(hi)
             update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))
         return self.Grade_sub_MH
 
@@ -433,13 +612,13 @@ class tchchat:
             Send grades as Keyboard
         '''
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
-        tchgrdlst = [["Go to Menu"]]
+        tchgrdlst = [["Back"]]
         index = 0
         for i in tchgrd:
             tchgrd.pop(index)
             index = index +1
             if i not in tchgrd:
-                tchgrdlst.append(["-"+i[0]])
+                tchgrdlst.append([i[0]])
             
         update.message.reply_text(text='''Select a Grade from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(tchgrdlst))
         return self.Announce_grd_MH
@@ -448,10 +627,11 @@ class tchchat:
         '''
             Asks teacher to send the msg to which she want to pass to the given grade
         '''
-        context.user_data['Annmsggrd'] = (update.message.text).upper()[1:]
+        if not update.message.text == 'Back':
+            context.user_data['Annmsggrd'] = (update.message.text).upper()
         update.message.reply_text(text="Please send the message you want us to pass to *{}* Batch".format(context.user_data['Annmsggrd']), parse_mode= 'Markdown') 
         update.message.reply_text(text="send the message starts with MSG-(YOUR MESSAGE). Example:")
-        update.message.reply_text(text="MSG-Hi students welcome to CR ALT",reply_markup=telegram.ReplyKeyboardMarkup([["Cancel"]]))
+        update.message.reply_text(text="MSG-Hi students welcome to CR ALT",reply_markup=telegram.ReplyKeyboardMarkup([["Back"]]))
         return self.Announce_msg_MH
 
     def anncon(self, update, context):
@@ -460,7 +640,7 @@ class tchchat:
         '''
         context.user_data['Annmsg'] = (update.message.text)[4:]
         update.message.reply_text(text='''You want us to send message *"{}"* to *{}* Batch'''.format(context.user_data['Annmsg'],context.user_data['Annmsggrd']), parse_mode= 'Markdown') 
-        update.message.reply_text(text="Please click on \nSend to send the message \nClick on cancel to cancel",reply_markup=telegram.ReplyKeyboardMarkup([['Send'],['Cancel']]))
+        update.message.reply_text(text="Please click on \nSend to send the message \nClick on cancel to cancel",reply_markup=telegram.ReplyKeyboardMarkup([['Send'],['Back']]))
         
         return self.Announce_conf_MH
 
@@ -479,7 +659,7 @@ class tchchat:
             requests.get(URL)
             cnt = cnt + 1
         update.message.reply_text(text="Your Message was sent to *{}* students in *{}* Batch".format(cnt,context.user_data['Annmsggrd']),parse_mode= 'Markdown')
-        return self.menu(update, context)
+        return self.menucall(update, context)
 
     # take class functions
 
@@ -488,7 +668,7 @@ class tchchat:
             Send grades:subject as Keyboard
         '''
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
-        tchgrdlst = [["Go to Menu"]]
+        tchgrdlst = [["Back"]]
         for i in tchgrd:
             tchgrdlst.append([i[0]+":"+i[1]])
             
@@ -500,7 +680,7 @@ class tchchat:
             Stores the grade:subject of  take class function,send days as keyboard 
         '''
         context.user_data['tkegrd'] = (update.message.text).upper()
-        text = [[">"+self.daylst[0],">"+self.daylst[1]],[">"+self.daylst[2],">"+self.daylst[3]],[">" + self.daylst[4],self.daylst[5]]]
+        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]#
         update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Take_grd_MH
 
@@ -508,11 +688,12 @@ class tchchat:
         '''
             Stores the day of  take class function,send period as keyboard 
         '''
-        context.user_data['tkeday'] = (update.message.text)[1:].capitalize()
+        if (update.message.text).capitalize() in self.daylst:
+            context.user_data['tkeday'] = (update.message.text).capitalize()
         grade = context.user_data['tkegrd'].split(':')[0]
         persublst = self.db.getStdtt(grade,context.user_data['tkeday'])
         perlst = list()
-        text = [["Go to Menu"]]
+        text = [["Back"]]
         for i in persublst:
             perlst.append(i[0])
 
@@ -553,7 +734,7 @@ class tchchat:
             cnt = cnt + 1
         update.message.reply_text(text=text,parse_mode= 'Markdown' )
         update.message.reply_text(text="Your Message was sent to *{}* students in *{}* Batch".format(cnt,tcdata[0]),parse_mode= 'Markdown')
-        return self.menu(update,context)
+        return self.menucall(update,context)
 
     # Cancel class
 
@@ -561,7 +742,7 @@ class tchchat:
         '''
             Send Days as keyboard for cancel class
         '''
-        text = [[":"+self.daylst[0],":"+self.daylst[1]],[":"+self.daylst[2],":"+self.daylst[3]],[":"+self.daylst[4],self.daylst[5]]]
+        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]
         update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Ccl_cls_MH
 
@@ -570,9 +751,10 @@ class tchchat:
             Store day 
             Send Period:Grade:Subject as Keyboard
         '''
-        context.user_data['ccday'] = (update.message.text)[1:].capitalize()
+        if (update.message.text).capitalize() in self.daylst:
+            context.user_data['ccday'] = (update.message.text).capitalize()
         perlst=self.db.getTeachtt(update.effective_chat.id,context.user_data['ccday'])
-        text = [["Go to Menu"]]
+        text = [["Back"]]
         for i in perlst:
             text.append([i[0] + ":" + i[1]+ ":" + i[2]])
         update.message.reply_text(text=''' Select a Period from {} Timetable in list'''.format(context.user_data['ccday']), reply_markup=telegram.ReplyKeyboardMarkup(text))
@@ -591,7 +773,7 @@ class tchchat:
             return self.cclsmsg(update,context)
         else:
             update.message.reply_text(text='''There was an error please try again''',parse_mode= 'Markdown' )
-            return self.ccdaykb (update, context)
+            return self.ccdaykb(update, context)
 
     def cclsmsg(self,update,context):
         '''
@@ -610,7 +792,10 @@ class tchchat:
             cnt = cnt + 1
         update.message.reply_text(text=text,parse_mode= 'Markdown' )
         update.message.reply_text(text="Your Message was sent to *{}* students in *{}* Batch".format(cnt,ccdata[1]),parse_mode= 'Markdown')
-        return self.menu(update,context)
+        return self.menucall(update,context)
 if __name__ == '__main__':
     db = teleDb()
     hi = tchchat(db)
+    self.updater.start_polling()
+    print("Getting Updates of CR_ALT(TCH)")
+    self.updater.idle()
