@@ -357,7 +357,7 @@ class stdchat:
                 try:
                     if (int(att[0]) > int(att[1])):
                         bot.send_message(chat_id=update.effective_chat.id, text="Sorry,Present classes can't be grater than total classes")
-                        raise Exception("Sorry,Present classes can't be grater than total classes")
+                        raise Exception("Sorry,Present classes can't be greater than total classes")
                     self.db.setstdatt(update.effective_chat.id,subnm,att[0],att[1])
                 except:
                     bot.send_message(chat_id=update.effective_chat.id, text="Invalid Input, Try Again")
