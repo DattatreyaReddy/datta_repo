@@ -285,7 +285,7 @@ class tchchat:
             Function to send error when user enters Invalid Roll Number in Roll no setup cov
         '''
         update.message.reply_text(text='''*Invalid or Already registered Employee ID*''', parse_mode= 'Markdown')
-        update.message.reply_text(text='''Please try again with  \n*A Valid Roll Number*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please try again with  \n*A Valid Employee ID*''', parse_mode= 'Markdown')
         if context.user_data['updtch']:
             return self.Empupd_MH
         else:
