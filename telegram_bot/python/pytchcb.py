@@ -87,7 +87,7 @@ class tchchat:
                     entry_points=[MessageHandler((Filters.regex('^MSG-.*')),self.anncon)],
                     states= {
                         self.Announce_conf_MH : [MessageHandler((Filters.text('Send')),self.annsnd),
-                                        MessageHandler(Filters.text('Back'),self.bckannmsg),CommandHandler('menu', self.menucall)]
+                                        MessageHandler(Filters.text('Back'),self.menucall),CommandHandler('menu', self.menucall)]
                     },
                     allow_reentry= True,
                     fallbacks = [MessageHandler((~Filters.text('Send') & ~Filters.text('Back') & ~Filters.command('menu')),self.ivanncon)],
@@ -285,7 +285,7 @@ class tchchat:
             Function to send error when user enters Invalid Roll Number in Roll no setup cov
         '''
         update.message.reply_text(text='''*Invalid or Already registered Employee ID*''', parse_mode= 'Markdown')
-        update.message.reply_text(text='''Please try again with  \n*A Valid EMPLOYEE ID*''', parse_mode= 'Markdown')
+        update.message.reply_text(text='''Please try again with  \n*A Valid Roll Number*''', parse_mode= 'Markdown')
         if context.user_data['updtch']:
             return self.Empupd_MH
         else:
@@ -435,14 +435,6 @@ class tchchat:
         self.anngrdkb(update,context)
         return END
 
-    def bckannmsg(self,update,context):
-        '''
-            End the Third level conv of announcement class
-            and send back to Message level(first level)
-        '''
-        self.annmsg(update,context)
-        return END
-
     def menucall (self,update,context):
         '''
             Return to the menu
@@ -481,7 +473,7 @@ class tchchat:
             update.message.text = emp_id
             return self.start(update, context)  
         else:
-            return self.default(update, context)
+            return self.ivid(update, context)
 
     def empupd(self,update,context):
         '''
@@ -499,12 +491,6 @@ class tchchat:
         '''
         logger.info("User %s is using CR ALT (Techer ver).", update.message.from_user.first_name)
         text = [["Today's Timetable","Daily Timetable"],["Batch Timetable","Announcement"],["Take Class","Cancel Class"],['Change Your EMPLOYEE ID']]
-        if 'Subject' in context.user_data:
-            del context.user_data['Subject']
-        if 'Annmsg' in context.user_data:
-            del context.user_data['Annmsg']
-        if 'Annmsggrd' in context.user_data:
-            del context.user_data['Annmsggrd']
         update.message.reply_text(text='''Select an option from the\ngiven menu''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Menu_opt_MH
 
@@ -548,7 +534,7 @@ class tchchat:
                 update.message.reply_text(text=text)
                 return self.Day_MH
         else:
-            update.message.reply_text(text="No Classes on {}".format((update.message.text).capitalize()))
+            update.message.reply_text(text="Select a *valid day*\nfrom the given list",parse_mode= 'Markdown')
             return self.Day_MH
     
     def daykb (self, update, context):
@@ -568,10 +554,12 @@ class tchchat:
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
         tchgrdlst = [["Back"]]
         index = 0
+        self.grdgrdchklst = ['Back']
         for i in tchgrd:
             tchgrd.pop(index)
             index = index +1
             if i not in tchgrd:
+                self.grdgrdchklst.append(i[0])
                 tchgrdlst.append([i[0]])
         update.message.reply_text(text='''Select a Grade from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(tchgrdlst))
         return self.Grade_btt_MH
@@ -580,10 +568,14 @@ class tchchat:
         '''
             Stores the grade of grade timetable function,send days as keyboard 
         '''
-        context.user_data['Grdttsub'] = (update.message.text).upper()
-        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]
-        update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
-        return self.Grade_sub_MH
+        if (update.message.text).upper() in self.grdgrdchklst:
+            context.user_data['Grdttsub'] = (update.message.text).upper()
+            text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]
+            update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
+            return self.Grade_sub_MH
+        else:
+            update.message.reply_text(text='''Select a *Valid Grade* \nfrom the given list''',parse_mode = 'Markdown')
+            return self.Grade_btt_MH
     
     def grddtt(self, update, context):
         '''
@@ -598,11 +590,9 @@ class tchchat:
             if len(text)>19:
                 update.message.reply_text(text=text)
             else:
-                print(hi)
                 update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))     
         else:
-            print(hi)
-            update.message.reply_text(text="No Classes on {}".format((grdday).capitalize()))
+            update.message.reply_text(text="Select a *Valid Day* \nfrom the given list",parse_mode = 'Markdown')
         return self.Grade_sub_MH
 
     # Announcement functions
@@ -614,12 +604,13 @@ class tchchat:
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
         tchgrdlst = [["Back"]]
         index = 0
+        self.anngrdchklst = ['Back']
         for i in tchgrd:
             tchgrd.pop(index)
             index = index +1
             if i not in tchgrd:
-                tchgrdlst.append([i[0]])
-            
+                self.anngrdchklst.append(i[0])
+                tchgrdlst.append([i[0]])   
         update.message.reply_text(text='''Select a Grade from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(tchgrdlst))
         return self.Announce_grd_MH
 
@@ -627,12 +618,16 @@ class tchchat:
         '''
             Asks teacher to send the msg to which she want to pass to the given grade
         '''
-        if not update.message.text == 'Back':
-            context.user_data['Annmsggrd'] = (update.message.text).upper()
-        update.message.reply_text(text="Please send the message you want us to pass to *{}* Batch".format(context.user_data['Annmsggrd']), parse_mode= 'Markdown') 
-        update.message.reply_text(text="send the message starts with MSG-(YOUR MESSAGE). Example:")
-        update.message.reply_text(text="MSG-Hi students welcome to CR ALT",reply_markup=telegram.ReplyKeyboardMarkup([["Back"]]))
-        return self.Announce_msg_MH
+        if (update.message.text).upper() in self.anngrdchklst:
+            if not update.message.text == 'Back':
+                context.user_data['Annmsggrd'] = (update.message.text).upper()
+            update.message.reply_text(text="Please send the message you want us to pass to *{}* Batch".format(context.user_data['Annmsggrd']), parse_mode= 'Markdown') 
+            update.message.reply_text(text="send the message starts with MSG-(YOUR MESSAGE). Example:")
+            update.message.reply_text(text="MSG-Hi students welcome to CR ALT",reply_markup=telegram.ReplyKeyboardMarkup([["Back"]]))
+            return self.Announce_msg_MH
+        else:
+            update.message.reply_text(text='''Select a *Valid Grade* \nfrom the given list''',parse_mode = 'Markdown')
+            return self.Announce_grd_MH
 
     def anncon(self, update, context):
         '''
@@ -669,8 +664,10 @@ class tchchat:
         '''
         tchgrd = self.db.tchgrdsub(update.effective_chat.id)
         tchgrdlst = [["Back"]]
+        self.gschklst = ['Back']
         for i in tchgrd:
             tchgrdlst.append([i[0]+":"+i[1]])
+            self.gschklst.append(i[0]+":"+i[1])
             
         update.message.reply_text(text='''Select a Grade:Subject from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(tchgrdlst))
         return self.Take_cls_MH
@@ -679,43 +676,55 @@ class tchchat:
         '''
             Stores the grade:subject of  take class function,send days as keyboard 
         '''
-        context.user_data['tkegrd'] = (update.message.text).upper()
-        text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]#
-        update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
-        return self.Take_grd_MH
+        if (update.message.text in self.gschklst):
+            if (not update.message.text == 'Back'):
+                context.user_data['tkegrd'] = (update.message.text).upper()
+            text = [[self.daylst[0],self.daylst[1]],[self.daylst[2],self.daylst[3]],[self.daylst[4],self.daylst[5]]]#
+            update.message.reply_text(text='''Select a Day from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
+            return self.Take_grd_MH
+        else:
+            update.message.reply_text(text='''Select a valid *Grade:Subject*\nfrom the given list''',parse_mode = 'Markdown')
+            return self.Take_cls_MH
 
     def tkeperkb(self, update, context):
         '''
             Stores the day of  take class function,send period as keyboard 
         '''
         if (update.message.text).capitalize() in self.daylst:
-            context.user_data['tkeday'] = (update.message.text).capitalize()
-        grade = context.user_data['tkegrd'].split(':')[0]
-        persublst = self.db.getStdtt(grade,context.user_data['tkeday'])
-        perlst = list()
-        text = [["Back"]]
-        for i in persublst:
-            perlst.append(i[0])
-
-        for i in periodlst:
-            if i not in perlst:
-                text.append([i])
-
-        update.message.reply_text(text=''' For "{}" Select a Period from the\ngiven list'''.format(context.user_data['tkegrd']), reply_markup=telegram.ReplyKeyboardMarkup(text))
-        return self.Take_day_MH
+            if (not update.message.text == 'Back'):
+                context.user_data['tkeday'] = (update.message.text).capitalize()
+            grade = context.user_data['tkegrd'].split(':')[0]
+            persublst = self.db.getStdtt(grade,context.user_data['tkeday'])
+            perlst = list()
+            text = [["Back"]]
+            for i in persublst:
+                perlst.append(i[0])
+            self.perchklst = ['Back']
+            for i in periodlst:
+                if i not in perlst:
+                    text.append([i])
+                    self.perchklst.append(i)
+            update.message.reply_text(text=''' For "{}" Select a Period from the\ngiven list'''.format(context.user_data['tkegrd']), reply_markup=telegram.ReplyKeyboardMarkup(text))
+            return self.Take_day_MH
+        else:
+            update.message.reply_text(text='''Select a *Valid Day*\nfrom the given list''',parse_mode= 'Markdown')
+            return self.Take_grd_MH
 
     def tkecls(self, update, context):
         '''
             Create class in the timetable
         '''
         sub = context.user_data['tkegrd'].split(':')[1].upper()
-        k = self.db.crecls(sub,update.message.text,context.user_data['tkeday']) 
+        if update.message.text in self.perchklst:
+            k = self.db.crecls(sub,update.message.text,context.user_data['tkeday']) 
+        else:
+            k=-1
         
         if not k == -1:
             return self.tkeclsmsg(update,context)
         else:
-            update.message.reply_text(text='''There was an error please try again''',parse_mode= 'Markdown' )
-            return self.tkegrdkb(update, context)
+            update.message.reply_text(text='''There was an error please try again with \n*a valid period*''',parse_mode= 'Markdown' )
+            return self.menucall(update, context)
 
     def tkeclsmsg(self,update,context):
         '''
@@ -752,28 +761,35 @@ class tchchat:
             Send Period:Grade:Subject as Keyboard
         '''
         if (update.message.text).capitalize() in self.daylst:
-            context.user_data['ccday'] = (update.message.text).capitalize()
-        perlst=self.db.getTeachtt(update.effective_chat.id,context.user_data['ccday'])
-        text = [["Back"]]
-        for i in perlst:
-            text.append([i[0] + ":" + i[1]+ ":" + i[2]])
-        update.message.reply_text(text=''' Select a Period from {} Timetable in list'''.format(context.user_data['ccday']), reply_markup=telegram.ReplyKeyboardMarkup(text))
-        return self.Ccl_day_MH
+            if (not update.message.text == 'Back'):
+                context.user_data['ccday'] = (update.message.text).capitalize()
+            perlst=self.db.getTeachtt(update.effective_chat.id,context.user_data['ccday'])
+            text = [["Back"]]
+            self.pgschklst = ['Back']
+            for i in perlst:
+                text.append([i[0] + ":" + i[1]+ ":" + i[2]])
+                self.pgschklst.append(i[0] + ":" + i[1]+ ":" + i[2])
+            update.message.reply_text(text=''' Select a Period from {} Timetable in list'''.format(context.user_data['ccday']), reply_markup=telegram.ReplyKeyboardMarkup(text))
+            return self.Ccl_day_MH
+        else:
+            update.message.reply_text(text='''Select a *Valid Day*\nfrom the given list''',parse_mode = 'Markdown')
+            return self.Ccl_cls_MH
 
     def ccls(self, update, context):
         '''
         Delete class from the gven day and period
         '''
-        
-        context.user_data['ccdata'] = update.message.text.split(':')
-        ccdata = context.user_data['ccdata']
-        chk = self.db.delcls(ccdata[2].upper(),ccdata[0],context.user_data['ccday']) 
-
+        if update.message.text in self.pgschklst:
+            context.user_data['ccdata'] = update.message.text.split(':')
+            ccdata = context.user_data['ccdata']
+            chk = self.db.delcls(ccdata[2].upper(),ccdata[0],context.user_data['ccday']) 
+        else:
+            chk = -1
         if chk == 1:
             return self.cclsmsg(update,context)
         else:
-            update.message.reply_text(text='''There was an error please try again''',parse_mode= 'Markdown' )
-            return self.ccdaykb(update, context)
+            update.message.reply_text(text='''There was an error please try again \nby selecting from custom keyboard''',parse_mode= 'Markdown' )
+            return self.menucall(update,context)
 
     def cclsmsg(self,update,context):
         '''

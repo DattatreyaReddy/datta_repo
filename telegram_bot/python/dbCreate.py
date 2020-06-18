@@ -164,13 +164,13 @@ class teleDb:
         self.subject = subject
         self.period = period
         self.day = day
-        self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
-        subject_id = self.cur.fetchone()[0]
-        self.cur.execute('SELECT id FROM DAY_TB WHERE day = ? ', (self.day, ))
-        day_id = self.cur.fetchone()[0]
-        self.cur.execute('SELECT id FROM PERIOD_TB WHERE period = ? ', (self.period, ))
-        period_id = self.cur.fetchone()[0]
         try:
+            self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
+            subject_id = self.cur.fetchone()[0]
+            self.cur.execute('SELECT id FROM DAY_TB WHERE day = ? ', (self.day, ))
+            day_id = self.cur.fetchone()[0]
+            self.cur.execute('SELECT id FROM PERIOD_TB WHERE period = ? ', (self.period, ))
+            period_id = self.cur.fetchone()[0]
             self.cur.execute('''DELETE FROM TIMETABLE_TB WHERE day_id = ? AND subject_id = ? AND period_id = ?''',(day_id,subject_id,period_id))
             self.conn.commit()
             return 1
@@ -186,15 +186,16 @@ class teleDb:
         self.subject = subject
         self.period = period
         self.day = day
-        self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
-        subject_id = self.cur.fetchone()[0]
-        self.cur.execute('SELECT grade_id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
-        grade_id = self.cur.fetchone()[0]
-        self.cur.execute('SELECT id FROM DAY_TB WHERE day = ? ', (self.day, ))
-        day_id = self.cur.fetchone()[0]
-        self.cur.execute('SELECT id FROM PERIOD_TB WHERE period = ? ', (self.period, ))
-        period_id = self.cur.fetchone()[0] 
         try:
+            self.cur.execute('SELECT id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
+            subject_id = self.cur.fetchone()[0]
+            self.cur.execute('SELECT grade_id FROM SUBJECT_TB WHERE subject = ? ', (self.subject, ))
+            grade_id = self.cur.fetchone()[0]
+            self.cur.execute('SELECT id FROM DAY_TB WHERE day = ? ', (self.day, ))
+            day_id = self.cur.fetchone()[0]
+            self.cur.execute('SELECT id FROM PERIOD_TB WHERE period = ? ', (self.period, ))
+            period_id = self.cur.fetchone()[0] 
+
             self.cur.execute('''INSERT INTO TIMETABLE_TB(day_id,period_id, subject_id) VALUES ( ?, ?,  ?) ''',(day_id,period_id,subject_id))
             self.conn.commit()
             self.cur.execute('''SELECT SUBJECT_TB.subject FROM TIMETABLE_TB JOIN SUBJECT_TB ON TIMETABLE_TB.subject_id = SUBJECT_TB.id 
@@ -240,8 +241,10 @@ class teleDb:
         self.emp_id = emp_id
         self.updusr = updusr
         try:
+            self.cur.execute('SELECT id FROM TEACHER_TB WHERE emp_id = ? ', (self.emp_id,))
+            self.cur.fetchone()[0]
             if not self.updusr:
-                self.cur.execute('''INSERT OR IGNORE INTO TCHUSR_TB (chat_id,emp_id) VALUES ( ?, ?)''', (self.chat_id,self.emp_id))
+                self.cur.execute('''INSERT INTO TCHUSR_TB (chat_id,emp_id) VALUES ( ?, ?)''', (self.chat_id,self.emp_id))
             else:
                 self.cur.execute('''UPDATE TCHUSR_TB SET emp_id = ?  WHERE chat_id = ?''',(self.emp_id, self.chat_id))
             self.conn.commit()

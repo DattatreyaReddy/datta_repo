@@ -237,9 +237,7 @@ class stdchat:
         '''
         logger.info("User %s is using CR ALT.", update.message.from_user.first_name)
         text = [["Today's Timetable","Daily Timetable"],["Get Attendance","Set Attendance"],["Change Your ROLL NO"]]
-        if 'Subject' in context.user_data:
-            del context.user_data['Subject']
-        bot.send_message(chat_id=update.effective_chat.id, text='''Select an option from the\ngiven menu''', reply_markup=telegram.ReplyKeyboardMarkup(text))
+        update.message.reply_text(text='''Select an option from the\ngiven menu''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Menu_opt_MH
 
     # Student timetable Functions
@@ -322,45 +320,47 @@ class stdchat:
         '''
         sublst=self.db.getsubgrd(self.db.getusrgrd(update.effective_chat.id))
         text = [["Back"]]
+        self.subchklst = ['Back']
         for i in sublst:
             text.append([i[0]])
-        bot.send_message(chat_id=update.effective_chat.id, text='''Select a Subject from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
+            self.subchklst.append(i[0])
+        update.message.reply_text(text='''Select a Subject from the\ngiven list''', reply_markup=telegram.ReplyKeyboardMarkup(text))
         return self.Set_Atd_MH
     
     def selsubatd(self, update, context):
         '''
             Asks user for the status of the given subject (Present,Absent)
         '''
-        context.user_data['Subject'] = (update.message.text).upper()
-        text = [["Present","Absent"],["Back"]]
-        update.message.reply_text(text='''Select the status of {}\n '''.format((update.message.text).upper()), reply_markup=telegram.ReplyKeyboardMarkup(text))
-        update.message.reply_text(text='''If you want to enter \nthe pnt and ttl class \nseperatly then enter\nThem in this pattern - \n *pp:tt* or *p:t* or *p:tt* \n(ex: 05:10)-\n5 out of 10 classes attended''', parse_mode= 'Markdown')
-        return self.Set_Atdpa_MH
+        if (update.message.text).upper() in self.subchklst:
+            context.user_data['Subject'] = (update.message.text).upper()
+            text = [["Present","Absent"],["Back"]]
+            update.message.reply_text(text='''Select the status of {}\n '''.format((update.message.text).upper()), reply_markup=telegram.ReplyKeyboardMarkup(text))
+            update.message.reply_text(text='''If you want to enter \nthe pnt and ttl class \nseperatly then enter\nThem in this pattern - \n *pp:tt* or *p:t* or *p:tt* \n(ex: 05:10)-\n5 out of 10 classes attended''', parse_mode= 'Markdown')
+            return self.Set_Atdpa_MH
+        else:
+            update.message.reply_text(text='''Select a Valid Subject\nfrom the given list''', parse_mode = 'Markdown')
+            return self.Set_Atd_MH
+
 
     def setsubat(self, update, context):
         '''
             Sets attendance for the given subjects
         '''
-        try:
-            subnm = context.user_data['Subject']
-            del context.user_data['Subject']
-        except:
-            subnm = None
-        if subnm:
-            resp = update.message.text
-            if resp == 'Present':
-                self.db.setstdatt(update.effective_chat.id,subnm)
-            elif resp == 'Absent':
-                self.db.setstdatt(update.effective_chat.id,subnm,0,1)
-            else:
-                att = resp.split(':')
-                try:
-                    if (int(att[0]) > int(att[1])):
-                        bot.send_message(chat_id=update.effective_chat.id, text="Sorry,Present classes can't be grater than total classes")
-                        raise Exception("Sorry,Present classes can't be greater than total classes")
-                    self.db.setstdatt(update.effective_chat.id,subnm,att[0],att[1])
-                except:
-                    bot.send_message(chat_id=update.effective_chat.id, text="Invalid Input, Try Again")
+        subnm = context.user_data['Subject']
+        resp = update.message.text
+        if resp == 'Present':
+            self.db.setstdatt(update.effective_chat.id,subnm)
+        elif resp == 'Absent':
+            self.db.setstdatt(update.effective_chat.id,subnm,0,1)
+        else:
+            att = resp.split(':')
+            try:
+                if (int(att[0]) > int(att[1])):
+                    update.message.reply_text(text="Sorry,Present classes can't be grater than total classes")
+                    raise Exception("Sorry,Present classes can't be grater than total classes")
+                self.db.setstdatt(update.effective_chat.id,subnm,att[0],att[1])
+            except:
+                update.message.reply_text(text="Invalid Input, Try Again")
         self.getstdatd(update,context)
         self.getsubkb( update, context)
         return END
